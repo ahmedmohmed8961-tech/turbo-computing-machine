@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Apple of Fortune</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Cairo", sans-serif;
+        }
+
+        body {
+            background-color: #020f09;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .screen-container {
+            width: 100vw;
+            max-width: 420px;
+            height: 100vh;
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            background: 
+                radial-gradient(circle at 65% 32%, rgba(200, 240, 110, 0.45) 0%, transparent 40%),
+                radial-gradient(circle at 85% 18%, rgba(80, 210, 160, 0.45) 0%, transparent 42%),
+                radial-gradient(circle at 50% 88%, rgba(1, 40, 25, 0.95) 0%, transparent 60%),
+                linear-gradient(180deg, #092c23 0%, #0d4235 30%, #06261d 65%, #02130e 100%);
+            box-shadow: 0 0 35px rgba(0, 0, 0, 0.95);
+            overflow: hidden;
+        }
+
+        /* الرأس العلوي */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px 2px 14px;
+            z-index: 10;
+        }
+
+        .top-btn {
+            background: none;
+            border: none;
+            color: #d1eae0;
+            font-size: 19px;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .balance-badge {
+            background: rgba(9, 36, 27, 0.9);
+            border: 1px solid #1f5e46;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            padding: 3px 12px 3px 5px;
+            gap: 7px;
+        }
+
+        .balance-val {
+            color: #ffffff;
+            font-size: 14.5px;
+            font-weight: 700;
+        }
+
+        .btn-plus {
+            background: #27ae60;
+            color: #fff;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .game-title {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            color: #a4ebd0;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+        }
+
+        /* شبكة اللعبة */
+        .board-grid {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            padding: 2px 10px;
+            gap: 2px;
+            z-index: 5;
+            position: relative;
+        }
+
+        .grid-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 5px;
+            transition: all 0.2s ease;
+        }
+
+        /* كبسولة المضاعف الخضراء على اليسار تماماً مثل الصورة الأصلية */
+        .mult-tag {
+            width: 48px;
+            height: 22px;
+            background: rgba(4, 25, 18, 0.75);
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #4b806d;
+            direction: ltr;
+        }
+
+        .grid-row.active .mult-tag {
+            background: #3eb738;
+            color: #ffffff;
+            font-weight: 800;
+            box-shadow: 0 0 12px rgba(62, 183, 56, 0.85);
+        }
+
+        /* الخلية الحاضنة */
+        .barrel-cell {
+            flex: 1;
+            max-width: 54px;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .grid-row.active .barrel-cell:active {
+            transform: scale(0.92);
+        }
+
+        .barrel-cell.dimmed {
+            opacity: 0.5;
+            filter: brightness(0.7);
+        }
+
+        .grid-row.active .barrel-cell {
+            opacity: 1;
+            filter: brightness(1.05);
+        }
+
+        .svg-asset {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.8));
+        }
+
+        /* نافذة النتيجة في المنتصف */
+        .center-alert {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 25;
+            pointer-events: none;
+            display: none;
+        }
+
+        .center-alert h2 {
+            font-size: 26px;
+            font-weight: 800;
+            color: #ffffff;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+            margin-bottom: 2px;
+        }
+
+        .center-alert p {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.9);
+        }
+
+        /* لوحة التحكم السفلية */
+        .dock-panel {
+            background: rgba(6, 23, 17, 0.95);
+            border-top: 1px solid rgba(25, 78, 59, 0.7);
+            padding: 8px 12px 14px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            z-index: 10;
+        }
+
+        .profit-bar {
+            background: rgba(14, 46, 36, 0.85);
+            border: 1px solid #1a5742;
+            border-radius: 8px;
+            padding: 7px 0;
+            text-align: center;
+            font-size: 14.5px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .action-btn {
+            background: #5292c6;
+            color: #ffffff;
+            border: none;
+            border-radius: 7px;
+            padding: 12px;
+            font-size: 16.5px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .action-btn:active {
+            filter: brightness(0.9);
+        }
+    </style>
+</head>
+<body>
+
+<div class="screen-container">
+    <!-- الشريط العلوي -->
+    <div class="header-bar">
+        <button class="top-btn">➔</button>
+        <div class="balance-badge">
+            <span class="balance-val" id="balanceDisplay">78.18 ج.م</span>
+            <button class="btn-plus" onclick="addFunds()">+</button>
+        </div>
+        <button class="top-btn">ⓘ</button>
+    </div>
+
+    <div class="game-title">APPLE OF FORTUNE</div>
+
+    <!-- شبكة اللعب -->
+    <div class="board-grid" id="boardGrid"></div>
+
+    <!-- إشعار الفوز/الخسارة في المنتصف -->
+    <div class="center-alert" id="centerAlert">
+        <h2 id="alertTitle">الفوز!</h2>
+        <p id="alertSub">أرباحك: 40.2 ج.م</p>
+    </div>
+
+    <!-- لوحة الأرباح والزر -->
+    <div class="dock-panel">
+        <div class="profit-bar" id="profitBanner">
+            الأرباح الحالية: 0.0 ج.م
+        </div>
+        <button id="mainBtn" class="action-btn" onclick="handleGameAction()">الرهان (10 ج.م)</button>
+    </div>
+</div>
+
+<script>
+    const MULTIPLIERS = [1.23, 1.54, 1.93, 2.41, 4.02, 6.71, 11.18, 27.97, 69.93, 349.68];
+    const ROWS = 10;
+    const COLS = 5;
+    const BAD_APPLES_CONFIG = [1, 1, 1, 1, 2, 2, 2, 3, 3, 4];
+
+    // 1. رسم الغطاء الخشبي المربوط بالخيط الفيروزي طبق الأصل
+    const COVERED_BARREL_SVG = `
+        <svg viewBox="0 0 100 100" class="svg-asset">
+            <!-- الطبق الخشبي السفلي بتفاصيل الحبيبات الخشبية -->
+            <circle cx="50" cy="50" r="47" fill="#843912" stroke="#481804" stroke-width="4"/>
+            <circle cx="50" cy="50" r="41" fill="#c36427"/>
+            <path d="M12 45 Q50 38 88 45" stroke="#9e4714" stroke-width="2.5" fill="none"/>
+            <path d="M15 58 Q50 64 85 58" stroke="#6b2b07" stroke-width="2.5" fill="none"/>
+            
+            <!-- الغطاء المقبب/الهرمي المنتفخ من ألواح الخشب -->
+            <path d="M50 16 C34 16 26 28 26 44 C26 58 35 76 35 79 C35 83 65 83 65 79 C65 76 74 58 74 44 C74 28 66 16 50 16 Z" 
+                  fill="url(#coverWoodGrad)" stroke="#4e1a02" stroke-width="3"/>
+            
+            <!-- خطوط تجزئة ألواح خشب الغطاء -->
+            <path d="M42 18 C38 32 37 60 38 81" stroke="#873505" stroke-width="2.5" fill="none"/>
+            <path d="M58 18 C62 32 63 60 62 81" stroke="#873505" stroke-width="2.5" fill="none"/>
+            <path d="M50 16 L50 81" stroke="#ff8c3b" stroke-width="1.5" fill="none"/>
+
+            <!-- لمعة الضوء العلوية على رأس الغطاء -->
+            <path d="M38 22 Q50 18 62 22" stroke="rgba(255,255,255,0.45)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+            <!-- حبل الربط الفيروزي الملفوف والمائل بظلاله -->
+            <!-- لفة الحبل 1 -->
+            <path d="M33 60 Q50 67 67 62" stroke="#10574f" stroke-width="7" fill="none" stroke-linecap="round"/>
+            <path d="M33 59 Q50 66 67 61" stroke="#25dfcf" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <path d="M35 58.5 Q50 65.5 65 60.5" stroke="#a3fff6" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+
+            <!-- لفة الحبل 2 المائلة -->
+            <path d="M34 68 Q50 74 66 69" stroke="#10574f" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+            <path d="M34 67 Q50 73 66 68" stroke="#25dfcf" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+            
+            <defs>
+                <radialGradient id="coverWoodGrad" cx="45%" cy="30%" r="70%">
+                    <stop offset="0%" stop-color="#fca148"/>
+                    <stop offset="55%" stop-color="#df6714"/>
+                    <stop offset="100%" stop-color="#7d2902"/>
+                </radialGradient>
+            </defs>
+        </svg>`;
+
+    // 2. رسم الطبق الخشبي المغلق فقط (للصفوف غير النشطة)
+    const CLOSED_PLATE_SVG = `
+        <svg viewBox="0 0 100 100" class="svg-asset">
+            <circle cx="50" cy="50" r="47" fill="#672909" stroke="#361202" stroke-width="4"/>
+            <circle cx="50" cy="50" r="41" fill="#9f4b16"/>
+            <!-- خطوط حلقات الخشب -->
+            <path d="M12 40 Q50 32 88 40" stroke="#79330a" stroke-width="3" fill="none"/>
+            <path d="M12 55 Q50 62 88 55" stroke="#501d02" stroke-width="3" fill="none"/>
+            <circle cx="50" cy="50" r="41" fill="url(#plateInnerGrad)"/>
+            <defs>
+                <radialGradient id="plateInnerGrad" cx="40%" cy="30%" r="70%">
+                    <stop offset="0%" stop-color="rgba(255,255,255,0.2)"/>
+                    <stop offset="60%" stop-color="transparent"/>
+                    <stop offset="100%" stop-color="rgba(0,0,0,0.55)"/>
+                </radialGradient>
+            </defs>
+        </svg>`;
+
+    // 3. رسم التفاحة السليمة فوق الطبق الدائري الأخضر
+    const GOOD_APPLE_SVG = `
+        <svg viewBox="0 0 100 100" class="svg-asset">
+            <!-- قاعدة الطبق الخضراء المضيئة -->
+            <circle cx="50" cy="50" r="47" fill="#145a32" stroke="#27ae60" stroke-width="3.5"/>
+            <circle cx="50" cy="50" r="41" fill="url(#greenDishGrad)"/>
+
+            <!-- التفاحة الحمراء اللامعة -->
+            <g transform="translate(14, 14) scale(0.72)">
+                <path d="M50 20 C46 8 54 3 60 4" stroke="#3e2723" stroke-width="5" fill="none" stroke-linecap="round"/>
+                <path d="M56 10 C66 8 72 16 63 19 C55 21 52 14 56 10" fill="#4caf50"/>
+                <path d="M50 26 C34 14 12 24 12 52 C12 78 34 96 50 96 C66 96 88 78 88 52 C88 24 66 14 50 26 Z" 
+                      fill="url(#appleBodyGrad)"/>
+                <circle cx="33" cy="42" r="7" fill="rgba(255,255,255,0.48)"/>
+            </g>
+            <defs>
+                <radialGradient id="greenDishGrad" cx="40%" cy="35%" r="65%">
+                    <stop offset="0%" stop-color="#2ecc71"/>
+                    <stop offset="70%" stop-color="#196f3d"/>
+                    <stop offset="100%" stop-color="#0b3b1f"/>
+                </radialGradient>
+                <radialGradient id="appleBodyGrad" cx="35%" cy="35%" r="65%">
+                    <stop offset="0%" stop-color="#ff4d4d"/>
+                    <stop offset="55%" stop-color="#e60000"/>
+                    <stop offset="100%" stop-color="#730000"/>
+                </radialGradient>
+            </defs>
+        </svg>`;
+
+    // 4. رسم التفاحة الفاسدة (الهيكل العظمي) فوق الطبق الأحمر
+    const BAD_APPLE_SVG = `
+        <svg viewBox="0 0 100 100" class="svg-asset">
+            <!-- قاعدة الطبق الحمراء الداكنة -->
+            <circle cx="50" cy="50" r="47" fill="#4d130d" stroke="#922b21" stroke-width="3.5"/>
+            <circle cx="50" cy="50" r="41" fill="url(#redDishGrad)"/>
+
+            <!-- الهيكل العظمي للتفاحة المعضوضة -->
+            <g transform="translate(15, 14) scale(0.7)">
+                <path d="M50 16 C46 6 54 3 60 4" stroke="#3e2723" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+                <path d="M30 22 C50 22 50 32 70 22 C76 38 60 48 72 63 C66 80 55 85 50 85 C45 85 34 80 28 63 C40 48 24 38 30 22 Z" 
+                      fill="#fae5c8" stroke="#8d6e63" stroke-width="2.5"/>
+                <circle cx="50" cy="42" r="3.8" fill="#3e2723"/>
+                <circle cx="50" cy="60" r="3.8" fill="#3e2723"/>
+                <path d="M30 22 C38 20 45 25 50 27 C55 25 62 20 70 22 C65 16 35 16 30 22 Z" fill="#d32f2f"/>
+                <path d="M30 85 C38 87 45 82 50 80 C55 82 62 87 70 85 C65 91 35 91 30 85 Z" fill="#d32f2f"/>
+            </g>
+            <defs>
+                <radialGradient id="redDishGrad" cx="40%" cy="35%" r="65%">
+                    <stop offset="0%" stop-color="#922b21"/>
+                    <stop offset="70%" stop-color="#641e16"/>
+                    <stop offset="100%" stop-color="#360f0b"/>
+                </radialGradient>
+            </defs>
+        </svg>`;
+
+    let balance = 78.18;
+    let betAmount = 10.0;
+    let isPlaying = false;
+    let currentRow = 0;
+    let gridData = [];
+
+    function buildBoard() {
+        const grid = document.getElementById('boardGrid');
+        grid.innerHTML = '';
+
+        for (let r = ROWS - 1; r >= 0; r--) {
+            const row = document.createElement('div');
+            row.className = `grid-row ${isPlaying && r === currentRow ? 'active' : ''}`;
+            row.id = `row-${r}`;
+
+            // كبسولة المضاعف
+            const tag = document.createElement('div');
+            tag.className = 'mult-tag';
+            tag.innerText = `x${MULTIPLIERS[r]}`;
+            row.appendChild(tag);
+
+            // الأطباق الـ 5
+            for (let c = 0; c < COLS; c++) {
+                const cell = document.createElement('div');
+                cell.className = `barrel-cell ${r !== currentRow || !isPlaying ? 'dimmed' : ''}`;
+                cell.id = `cell-${r}-${c}`;
+
+                // الوضع المبدئي: الصف الأول يحمل الأغطية وباقي الصفوف مغلقة
+                if (!isPlaying) {
+                    if (r === 0) {
+                        cell.className = 'barrel-cell';
+                        cell.innerHTML = COVERED_BARREL_SVG;
+                    } else {
+                        cell.innerHTML = CLOSED_PLATE_SVG;
+                    }
+                }
+
+                cell.onclick = () => onCellSelect(r, c);
+                row.appendChild(cell);
+            }
+
+            grid.appendChild(row);
+        }
+    }
+
+    function createGameMap() {
+        gridData = [];
+        for (let r = 0; r < ROWS; r++) {
+            const bads = BAD_APPLES_CONFIG[r];
+            let row = Array(COLS).fill(true);
+            let placed = 0;
+            while (placed < bads) {
+                let idx = Math.floor(Math.random() * COLS);
+                if (row[idx] === true) {
+                    row[idx] = false;
+                    placed++;
+                }
+            }
+            gridData.push(row);
+        }
+    }
+
+    function handleGameAction() {
+        if (!isPlaying) {
+            if (balance < betAmount) {
+                alert('الرصيد غير كافٍ');
+                return;
+            }
+
+            document.getElementById('centerAlert').style.display = 'none';
+            balance -= betAmount;
+            updateBalanceUI();
+
+            isPlaying = true;
+            currentRow = 0;
+            createGameMap();
+            buildBoard();
+
+            document.getElementById('profitBanner').innerText = `الأرباح الحالية: 0.0 ج.م`;
+            const btn = document.getElementById('mainBtn');
+            btn.innerText = 'خذ الأرباح';
+
+            refreshRowDisplay();
+        } else {
+            cashOut();
+        }
+    }
+
+    function refreshRowDisplay() {
+        for (let r = 0; r < ROWS; r++) {
+            const row = document.getElementById(`row-${r}`);
+            if (!row) continue;
+
+            if (r === currentRow) {
+                row.classList.add('active');
+                row.querySelectorAll('.barrel-cell').forEach(c => {
+                    c.classList.remove('dimmed');
+                    c.innerHTML = COVERED_BARREL_SVG;
+                });
+            } else {
+                row.classList.remove('active');
+                row.querySelectorAll('.barrel-cell').forEach(c => {
+                    c.classList.add('dimmed');
+                    if (r > currentRow) {
+                        c.innerHTML = CLOSED_PLATE_SVG;
+                    }
+                });
+            }
+        }
+    }
+
+    function onCellSelect(r, c) {
+        if (!isPlaying || r !== currentRow) return;
+
+        const isGood = gridData[r][c];
+        const cell = document.getElementById(`cell-${r}-${c}`);
+
+        if (isGood) {
+            cell.innerHTML = GOOD_APPLE_SVG;
+            cell.classList.remove('dimmed');
+
+            const currentWin = (betAmount * MULTIPLIERS[currentRow]).toFixed(1);
+            document.getElementById('profitBanner').innerText = `الأرباح الحالية: ${currentWin} ج.م`;
+
+            if (currentRow === ROWS - 1) {
+                cashOut();
+            } else {
+                currentRow++;
+                refreshRowDisplay();
+            }
+        } else {
+            cell.innerHTML = BAD_APPLE_SVG;
+            cell.classList.remove('dimmed');
+            revealEntireGrid();
+
+            setTimeout(() => {
+                showAlert('للأسف خسرت!', 'حظ أوفر في المرة القادمة', false);
+            }, 300);
+        }
+    }
+
+    function cashOut() {
+        let winRow = currentRow;
+        if (!document.querySelector(`#row-${currentRow} svg`)) {
+            winRow = currentRow > 0 ? currentRow - 1 : 0;
+        }
+
+        const winAmount = (betAmount * MULTIPLIERS[winRow]).toFixed(1);
+        balance += parseFloat(winAmount);
+        updateBalanceUI();
+
+        revealEntireGrid();
+        setTimeout(() => {
+            showAlert('الفوز!', `أرباحك: ${winAmount} ج.م`, true);
+        }, 300);
+    }
+
+    function revealEntireGrid() {
+        for (let r = 0; r < ROWS; r++) {
+            const row = document.getElementById(`row-${r}`);
+            row.classList.remove('active');
+            for (let c = 0; c < COLS; c++) {
+                const cell = document.getElementById(`cell-${r}-${c}`);
+                cell.classList.remove('dimmed');
+                cell.innerHTML = gridData[r][c] ? GOOD_APPLE_SVG : BAD_APPLE_SVG;
+            }
+        }
+    }
+
+    function showAlert(title, subtitle, isWin) {
+        isPlaying = false;
+        const alertBox = document.getElementById('centerAlert');
+        const aTitle = document.getElementById('alertTitle');
+        const aSub = document.getElementById('alertSub');
+
+        aTitle.innerText = title;
+        aTitle.style.color = isWin ? '#ffffff' : '#ff4d4d';
+        aSub.innerText = subtitle;
+        alertBox.style.display = 'block';
+
+        const btn = document.getElementById('mainBtn');
+        btn.innerText = `العب مرة أخرى؟ (${betAmount} ج.م)`;
+    }
+
+    function updateBalanceUI() {
+        document.getElementById('balanceDisplay').innerText = `${balance.toFixed(2)} ج.م`;
+    }
+
+    function addFunds() {
+        balance += 50;
+        updateBalanceUI();
+    }
+
+    buildBoard();
+</script>
+</body>
+</html>
